@@ -1,0 +1,8 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/includes/layout.php';
+if(logged_in()) redirect('index.php');
+$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$u=post('username');$p=(string)($_POST['password']??'');try{$s=db()->prepare('SELECT e.* FROM employee e WHERE employee_username=? LIMIT 1');$s->execute([$u]);$row=$s->fetch();$valid=$row && (password_verify($p,(string)$row['employee_password']) || hash_equals((string)$row['employee_password'],$p));if($valid){if(!password_get_info((string)$row['employee_password'])['algo'])db()->prepare('UPDATE employee SET employee_password=? WHERE employee_id=?')->execute([password_hash($p,PASSWORD_DEFAULT),(int)$row['employee_id']]);session_regenerate_id(true);$_SESSION['employee_id']=(int)$row['employee_id'];redirect('index.php');}$error='Invalid username or password.';}catch(Throwable $e){$error='Database is not installed. Run install.php first.';}}
+?>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login - <?=e(APP_NAME)?></title><link rel="stylesheet" href="assets/css/style.css"></head><body class="auth-page"><div class="auth-card"><div class="brand-mark big">CH</div><h1>Member Login</h1><p>Classic Hotel Management System</p><?php if($error):?><div class="alert error"><?=e($error)?></div><?php endif;?><form method="post"><?=csrf_field()?><label>Username<input name="username" required autofocus></label><label>Password<input type="password" name="password" required></label><button class="btn primary full">Sign In</button></form><p class="small"><a href="install.php">Installation / database setup</a></p></div></body></html>
